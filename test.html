@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Customizer</title>
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .column {
+            flex: 1;
+            /* This will make each column take up an equal amount of space */
+        }
+
+        .color-options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            /* This creates a consistent gap between color options */
+        }
+
+        .color-option {
+            display: flex;
+            align-items: center;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-sizing: border-box;
+            /* This ensures that the border and padding are included in the element's total width and height */
+        }
+
+        .color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+            /* This prevents the color indicator from shrinking if the container gets too small */
+        }
+
+        .color-number {
+            font-weight: bold;
+            flex-grow: 1;
+            /* This allows the color number to take up the remaining space in the container */
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            /* This will create as many columns as can fit in the container, with a minimum width of 160px for each column */
+            overflow-y: auto;
+            /* Add a scrollbar if the content exceeds the maximum height */
+            width: 100%;
+            /* Set the width to 100% to allow the dropdown to expand horizontally */
+            position: absolute;
+            background-color: #f1f1f1;
+            min-width: 50vw;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .dropdown-content a {
+            box-sizing: border-box;
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            border: 1px solid #ccc;
+            /* Add this line */
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: grid;
+        }
+
+        .dropdown-indicator {
+            display: inline-block;
+            background-color: wheat;
+            color: black;
+            padding: 2px;
+            font-size: 20px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .color-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="row">
+        <div class="column">
+            <h2>Map name</h2>
+            <div id="map-name">
+                Base name: <b><span id="base-map-name"></span></b> (<span id="base-map-name-length"></span> bytes)
+                <br>
+                New name: <input type="text" id="new-map-name" oninput="refreshColorAvailability()"> (<span
+                    id="new-map-name-length"></span> bytes)
+            </div>
+            <h2>Available colors by default</h2>
+            <div id="default-available-colors" class="color-options-container"></div>
+            <h2>Available colors by map name</h2>
+            <div id="available-colors-by-map" class="color-options-container"></div>
+            <h2>Choose additional colors to use</h2>
+            <!-- Color options -->
+            <!-- object with element id color-options-container-->
+            <div id="additional-colors" class="color-options-container"></div>
+            <!-- Dropdown menu here-->
+            <div class="dropdown">
+                <span class="dropdown-indicator">More colors... ▼</span>
+                <div class="dropdown-content">
+                </div>
+            </div>
+        </div>
+
+        <div class="column">
+            <!-- colors table -->
+            <h3>Terran/Protoss</h3>
+            <button onclick="addRow()">Add Row</button>
+            <table id="myTable">
+                <thead>
+                    <tr>
+                        <th>Header 1</th>
+                        <th>Header 2</th>
+                        <th>Header 3</th>
+                        <th>Header 4</th>
+                        <th>Header 5</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+
+        var wf_settings = {
+            "scenario_name_original": "mapname 한글 포함",
+            "scenario_name_new": null,
+            "tileset_index": 4,
+            "dimensions_are_256_256": false,
+            "human_plus_computer_is_eight": true
+        };
+
+        document.getElementById("base-map-name").innerText = wf_settings.scenario_name_original;
+        // set inner text of base-map-name-length to the length of the base map name in bytes when encoded to utf-8
+        document.getElementById("base-map-name-length").innerText = new TextEncoder().encode(wf_settings.scenario_name_original).length;
+
+        document.getElementById("new-map-name").value = wf_settings.scenario_name_new === null ? wf_settings.scenario_name_original : wf_settings.scenario_name_new;
+
+        var colorTagTable = [
+            ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#141008', '#18140c', '#28300c', '#101018', '#141420', '#2c2c40', '#444c68', '#040404', '#1c1810', '#201c14', '#24201c', '#30281c', '#40382c', '#544834', '#685c4c', '#907c64', '#282010', '#2c2414', '#342c18', '#382c1c', '#3c301c', '#403420', '#443824', '#504424', '#584c28', '#64582c', '#0c1004', '#141804', '#1c2008', '#20280c', '#343c10', '#404810', '#202030', '#141414', '#20181c', '#202020', '#282018', '#282424', '#302c2c', '#3c3038', '#3c383c', '#483c30', '#443440', '#544048', '#5c6464', '#6c7478', '#584e2f', '#4d432c', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ffffff'],
+            ['#000000', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#040404', '#141414', '#24201c', '#202024', '#242428', '#2c2c2c', '#2c3034', '#30343c', '#343840', '#3c3c3c', '#3c4048', '#40444c', '#4c5058', '#606060', '#747070', '#7c7c7c', '#201810', '#3c2c18', '#10100c', '#141418', '#18181c', '#201c18', '#20181c', '#1c2024', '#241c20', '#282024', '#24282c', '#30242c', '#282c34', '#303030', '#2c3038', '#3c2c34', '#383838', '#44382c', '#40303c', '#443440', '#503c48', '#484848', '#444850', '#484c54', '#545050', '#50545c', '#646464', '#706c6c', '#787474', '#888484', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#ffffff'],
+            ['#000000', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#544804', '#040810', '#040404', '#141414', '#101418', '#181c24', '#20201c', '#202424', '#202430', '#30302c', '#283034', '#3c4038', '#40443c', '#484c44', '#4c6470', '#708088', '#140c08', '#18100c', '#201810', '#241c14', '#2c1c14', '#302018', '#443424', '#504028', '#58442c', '#000408', '#141820', '#202c38', '#080c0c', '#0c0c10', '#0c1014', '#101414', '#141818', '#181c1c', '#1c2020', '#182028', '#242424', '#242828', '#282c30', '#283030', '#2c3030', '#2c3034', '#383838', '#44382c', '#444840', '#4c5048', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#ffffff'],
+            ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#241414', '#301c18', '#3c241c', '#040404', '#141414', '#181414', '#1c1818', '#201c1c', '#242020', '#28201c', '#282424', '#2c2828', '#302c2c', '#343030', '#3c3030', '#403838', '#140c0c', '#280c0c', '#281814', '#34201c', '#500c0c', '#442c24', '#700c0c', '#940c0c', '#b02800', '#100c10', '#242024', '#2c2420', '#282428', '#302424', '#2c282c', '#342828', '#302c30', '#382c2c', '#343034', '#383438', '#403434', '#40303c', '#3c383c', '#443440', '#483838', '#403c40', '#483844', '#48444c', '#544048', '#60484c', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#2323ff', '#ffffff'],
+            ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#141008', '#18140c', '#242c0c', '#101018', '#141420', '#2c2c40', '#444c68', '#040404', '#1c1810', '#201c14', '#24201c', '#30281c', '#40382c', '#544838', '#685c4c', '#907c64', '#282014', '#302814', '#342c18', '#382c1c', '#3c301c', '#443824', '#544430', '#0c1004', '#141804', '#181c08', '#1c2008', '#20240c', '#2c3410', '#343c10', '#404810', '#202030', '#28283c', '#303448', '#141414', '#20181c', '#282018', '#241c24', '#282424', '#302c2c', '#3c2c34', '#3c383c', '#483c30', '#443440', '#503c48', '#5c5034', '#2323ff', '#2323ff', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ffffff'],
+            ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#080400', '#140804', '#281008', '#34180c', '#3c180c', '#402010', '#502c10', '#542410', '#543014', '#643818', '#783418', '#8c5020', '#985824', '#a05c24', '#a86028', '#8c8068', '#040000', '#180c04', '#2c140c', '#301408', '#38180c', '#381c10', '#441c0c', '#442810', '#482810', '#4c2010', '#4c2c10', '#582818', '#602c18', '#682c14', '#683018', '#704018', '#743c20', '#804820', '#8c4c28', '#905028', '#945420', '#20181c', '#281c20', '#3c2c34', '#403c30', '#443440', '#503c48', '#685c4c', '#847460', '#948874', '#2323ff', '#2323ff', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ffffff'],
+            ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#302818', '#382c1c', '#182408', '#182c08', '#202c0c', '#1c3408', '#283410', '#203c08', '#28400c', '#204c04', '#202010', '#606060', '#707070', '#787878', '#888888', '#9c9c9c', '#100c08', '#18140c', '#201810', '#282014', '#0c1404', '#102004', '#0c1018', '#242838', '#080804', '#202020', '#282024', '#20202c', '#30281c', '#30242c', '#303030', '#2c3038', '#382c34', '#303440', '#383838', '#40343c', '#404040', '#3c4050', '#4c5060', '#646464', '#6c6c6c', '#7c7c7c', '#949498', '#a4a4a8', '#b8b8b8', '#cccccc', '#2323ff', '#2323ff', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ffffff'],
+            ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#08080c', '#080810', '#0c0c14', '#10101c', '#141420', '#141824', '#181828', '#1c1c34', '#20243c', '#282c40', '#282c4c', '#303450', '#38405c', '#040404', '#102020', '#202430', '#040408', '#0c0c18', '#101018', '#0c1418', '#101020', '#101420', '#141424', '#181824', '#141828', '#1c202c', '#242848', '#343c58', '#444c68', '#0c0c10', '#081010', '#0c1014', '#10181c', '#141c20', '#20181c', '#142024', '#241c20', '#182428', '#2c2028', '#1c2c30', '#282c38', '#382c34', '#303440', '#443440', '#3c4050', '#503c48', '#2323ff', '#2323ff', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ffffff']
+        ]
+
+        var defaultAvailableColors = [
+            0x87, 0x75, 0x8a, 0xa5, 0xa2, 0xa0, 0x29, 0xae, 0x17, 0x62, 0xa4, 0xa3, 0xa1, 0x9c, 0xb1, 0x1a, 0x00,
+            97 /*a*/, 44 /*,*/, 49 /*1*/
+        ]
+
+        var mapnameEnabledColors = [];
+
+        var colorTagMap = colorTagTable[wf_settings["tileset_index"]];
+        var chosenColors = [85, 199];
+        var chosenColorsForUse = [];
+
+        // Create the color options
+        function createColorOption(color, checked = false, fixed = false) {
+            const checkboxAttributes = (fixed ? 'disabled ' : '') + (checked ? 'checked ' : '');
+            return `
+                <div class="color-option">
+                    <div class="color-indicator" style="background-color: ${colorTagMap[color]};"></div>
+                    <span class="color-number">${color}</span>
+                    <input type="checkbox" id="color${color}" ${checkboxAttributes}>
+                </div>
+            `;
+        }
+        //
+        var defaultAvailable = defaultAvailableColors.sort().map(color => createColorOption(color, true, true));
+        var defaultAvailableHTML = defaultAvailable.join('');
+        document.getElementById('default-available-colors').innerHTML = defaultAvailableHTML;
+
+        function refreshColorAvailability() {
+            // get new map name
+            var newMapName = document.getElementById('new-map-name').value;
+            var newMapNameBytes = new TextEncoder().encode(newMapName);
+            var new_map_name_length = newMapNameBytes.length;
+            // if length is at least 32, make the length red
+            if (newMapNameBytes.length >= 32) {
+                document.getElementById('new-map-name-length').style.color = 'red';
+            } else {
+                document.getElementById('new-map-name-length').style.color = 'black';
+            }
+            document.getElementById('new-map-name-length').innerHTML = newMapNameBytes.length;
+
+            // get the list of available colors by map name
+            // discard all but the first 31 items of newMapNameBytes
+            // and then convert to list while removing duplicants
+            var mapnameEnabledColors = [...new Set(newMapNameBytes.slice(0, 31))];
+            // remove overlap with default available colors
+            mapnameEnabledColors = mapnameEnabledColors.filter(color => !defaultAvailableColors.includes(color));
+            var mapnameEnabledColorOptions = mapnameEnabledColors.sort().map(color => createColorOption(color, true, true));
+            var mapnameEnabledColorOptionsHTML = mapnameEnabledColorOptions.join('');
+            document.getElementById('available-colors-by-map').innerHTML = mapnameEnabledColorOptionsHTML;
+
+            // additional colors
+            var additionalColorOptions = chosenColors.sort().map(color => createColorOption(color, chosenColorsForUse.includes(color), false));
+            var additionalColorOptionsHTML = additionalColorOptions.join('');
+            document.getElementById('additional-colors').innerHTML = additionalColorOptionsHTML;
+
+            // refresh dropdown
+            refreshDropdown();
+        }
+
+        function chooseDropdownColor(color) {
+            if (!chosenColors.includes(color)) {
+                chosenColors.push(color);
+            }
+            refreshColorAvailability();
+        }
+
+        function refreshDropdown() {
+            // Get the dropdown content container
+            var dropdownContent = document.querySelector('.dropdown .dropdown-content');
+            dropdownContent.innerHTML = '';
+            // Generate the color options
+            for (var colorIndex in colorTagMap) {
+                // convert to int
+                colorIndexInt = parseInt(colorIndex);
+                if (chosenColors.includes(colorIndexInt) ||
+                    defaultAvailableColors.includes(colorIndexInt) ||
+                    colorIndexInt < 8 || // color not represented correctly in SC
+                    colorIndexInt >= 0b11111000) // not representable by utf-8
+                    continue;
+
+                var colorCode = colorTagMap[colorIndex];
+
+                // Create a new color option
+                var colorOption = document.createElement('a');
+                colorOption.id = 'dropdown-color-' + colorIndex;
+                colorOption.setAttribute('data-value', colorCode);
+                colorOption.setAttribute('onClick', 'chooseDropdownColor(' + colorIndex + ')');
+                colorOption.setAttribute('href', '#');
+
+                // Create the color indicator
+                var colorIndicator = document.createElement('span');
+                colorIndicator.className = 'color-indicator';
+                colorIndicator.style.backgroundColor = colorCode;
+
+                // Add the color indicator and color name to the color option
+                colorOption.appendChild(colorIndicator);
+                colorOption.appendChild(document.createTextNode(colorIndex));
+
+                // Add the color option to the dropdown content
+                dropdownContent.appendChild(colorOption);
+            }
+        }
+
+        refreshDropdown();
+
+        refreshColorAvailability();
+
+        function addRow() {
+            var table = document.getElementById("myTable");
+            var row = table.insertRow(-1);
+            for (var i = 0; i < 5; i++) {
+                var cell = row.insertCell(i);
+                cell.innerHTML = "New Cell";
+            }
+        }
+    </script>
+</body>
+
+</html>
