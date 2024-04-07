@@ -152,7 +152,7 @@
         <div class="column">
             <!-- colors table -->
             <h3>Terran/Protoss</h3>
-            <button onclick="addRow('tp-table')">Add Row</button>
+            <button onclick="addRow('tp')" id="tp-button">Add Row</button>
             <br><br>
             <table class="color-table" id="tp-table">
                 <thead>
@@ -249,7 +249,7 @@
         var mapnameEnabledColors = [];
 
         var colorTagMap = colorTagTable[wf_settings["tileset_index"]];
-        var chosenColors = [85, 134, 199];
+        var chosenColors = [85, 128, 134, 191];
         var chosenColorsForUse = [];
 
         // Create the color options
@@ -337,7 +337,8 @@
                     defaultAvailableColors.includes(colorIndexInt) ||
                     mapnameEnabledColors.includes(colorIndexInt) ||
                     colorIndexInt < 8 || // color not represented correctly in SC
-                    colorIndexInt >= 0b11111000) // not representable by utf-8
+                    colorIndexInt >= 0b11111000 || // not representable by utf-8
+                    colorIndexInt >= 192) // not worth the effort to support this
                     continue;
 
                 var colorCode = colorTagMap[colorIndex];
@@ -366,7 +367,7 @@
         }
 
         function requirementButtonClick(character) {
-            document.getElementById('new-map-name-input').value += character;
+            document.getElementById('new-map-name-input').value += escapeMapName(character);
             refreshColorAvailability();
         }
 
@@ -376,16 +377,15 @@
             if (color < 128) {
                 corresponding_character = escapeMapName(String.fromCharCode(color));
             } else if (color == 128) {
-                // return u+2800
-                corresponding_character = String.fromCharCode(0x2800);
-            } else {
-                // return u+2800 + color
-                corresponding_character = String.fromCharCode(0x2800 + color);
+                // return blank character
+                corresponding_character = String.fromCharCode(0x3000);
+            } else /* if (color < 192) */ {
+                corresponding_character = String.fromCharCode(0x2500 + color - 128);
             }
             return `
                 <div class="requirement">
                     <span style="color: red;">* No character matching with color ${color}.</span>
-                    <input type="button" onclick="requirementButtonClick('${corresponding_character}')">
+                    <button onclick="requirementButtonClick('${corresponding_character}')">Add corresponding character ${corresponding_character}</button>
                 </div>
             `;
         }
@@ -397,8 +397,10 @@
             document.getElementById('required-characters').innerHTML = missingColorsHTML;
         }
 
-
         refreshColorAvailability();
+
+
+        // PART TWO: TABLES
 
         function addRow(tableId) {
             var table = document.getElementById(tableId);
