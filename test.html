@@ -107,6 +107,16 @@
             border-radius: 50%;
             margin-right: 5px;
         }
+
+        .color-table {
+            border-collapse: collapse;
+        }
+
+        .color-table th,
+        .color-table td {
+            border: 1px solid black;
+            padding: 10px;
+        }
     </style>
 </head>
 
@@ -117,8 +127,11 @@
             <div id="map-name">
                 Base name: <b><span id="base-map-name"></span></b> (<span id="base-map-name-length"></span> bytes)
                 <br>
-                New name: <input type="text" id="new-map-name" oninput="refreshColorAvailability()"> (<span
-                    id="new-map-name-length"></span> bytes)
+                New name: <input type="text" id="new-map-name-input" oninput="refreshColorAvailability()">
+                <span id="new-map-name-unescaped-and-cut"></span> (<span id="new-map-name-length"></span> bytes)
+                <br><br>
+                <div id="required-characters"></div>
+                <br>
             </div>
             <h2>Available colors by default</h2>
             <div id="default-available-colors" class="color-options-container"></div>
@@ -139,15 +152,17 @@
         <div class="column">
             <!-- colors table -->
             <h3>Terran/Protoss</h3>
-            <button onclick="addRow()">Add Row</button>
-            <table id="myTable">
+            <button onclick="addRow('tp-table')">Add Row</button>
+            <br><br>
+            <table class="color-table" id="tp-table">
                 <thead>
                     <tr>
-                        <th>Header 1</th>
-                        <th>Header 2</th>
-                        <th>Header 3</th>
-                        <th>Header 4</th>
-                        <th>Header 5</th>
+                        <th>Index</th>
+                        <th>Color 1</th>
+                        <th>Color 2</th>
+                        <th>Color 3</th>
+                        <th>Color 4</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -159,7 +174,7 @@
     <script>
 
         var wf_settings = {
-            "scenario_name_original": "mapname 한글 포함",
+            "scenario_name_original": "\\mapname 한글 포함",
             "scenario_name_new": null,
             "tileset_index": 4,
             "dimensions_are_256_256": false,
@@ -170,7 +185,50 @@
         // set inner text of base-map-name-length to the length of the base map name in bytes when encoded to utf-8
         document.getElementById("base-map-name-length").innerText = new TextEncoder().encode(wf_settings.scenario_name_original).length;
 
-        document.getElementById("new-map-name").value = wf_settings.scenario_name_new === null ? wf_settings.scenario_name_original : wf_settings.scenario_name_new;
+        function escapeMapName(mapName) {
+            var escapedMapName = "";
+            for (var i = 0; i < mapName.length; i++) {
+                var charCode = mapName.charCodeAt(i);
+                if (charCode < 32 || charCode == 127) {
+                    escapedMapName += "\\x" + charCode.toString(16).padStart(2, "0");
+                } else if (charCode == 92) { // backslash
+                    escapedMapName += "\\\\"; // escape backslashes
+                } else
+                    escapedMapName += mapName[i];
+            }
+            return escapedMapName;
+        }
+
+        function unescapeMapName(escapedMapName) {
+            var mapName = "";
+            for (var i = 0; i < escapedMapName.length; i++) {
+                if (escapedMapName[i] == "\\") {
+                    if (escapedMapName[i + 1] == "x") {
+                        // Handle hexadecimal escape sequences
+                        var hex = escapedMapName.substr(i + 2, 2);
+                        // if hex is not a valid 2-digit hexadecimal number, just add the backslash and x to the map name
+                        if (!/^[0-9A-Fa-f]{2}$/.test(hex)) {
+                            mapName += "\\x";
+                            i += 1; // Skip over the backslash and x
+                        } else {
+                            mapName += String.fromCharCode(parseInt(hex, 16));
+                            i += 3; // Skip over this escape sequence
+                        }
+                    } else if (escapedMapName[i + 1] == "\\") {
+                        // Handle escaped backslashes
+                        mapName += "\\";
+                        i++; // Skip over this escape sequence
+                    }
+                } else {
+                    mapName += escapedMapName[i];
+                }
+            }
+            return mapName;
+        }
+
+        var newMapNameBeforeEscape = wf_settings.scenario_name_new === null ? wf_settings.scenario_name_original : wf_settings.scenario_name_new;
+
+        document.getElementById("new-map-name-input").value = escapeMapName(newMapNameBeforeEscape);
 
         var colorTagTable = [
             ['#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ff00ff', '#de00de', '#bd00bd', '#9c009c', '#7c007c', '#5b005b', '#3a003a', '#190019', '#2c2418', '#482414', '#5c2c14', '#703014', '#683c24', '#7c4018', '#784c2c', '#a80808', '#8c5430', '#846044', '#a0541c', '#c44c18', '#bc6824', '#b4703c', '#d06420', '#dc9434', '#e09454', '#ecc454', '#344428', '#406c3c', '#486c50', '#4c8050', '#508c5c', '#5ca078', '#000018', '#001034', '#000850', '#243448', '#304054', '#14347c', '#344c6c', '#405874', '#48688c', '#00709c', '#5880a4', '#4068d4', '#18acb8', '#2424fc', '#6494bc', '#70a8cc', '#8cc0d8', '#94dcf4', '#acdce8', '#acfcfc', '#ccf8f8', '#fcfc00', '#f4e490', '#fcfcc0', '#0c0c0c', '#181410', '#1c1c20', '#282830', '#383024', '#383c44', '#4c4030', '#4c4c4c', '#5c5040', '#585858', '#686868', '#78846c', '#68946c', '#74a47c', '#98948c', '#90b894', '#98c4a8', '#b0b0b0', '#acccb0', '#c4c0bc', '#cce0d0', '#f0f0f0', '#1c1008', '#28180c', '#341008', '#34200c', '#381020', '#342820', '#443408', '#483018', '#600000', '#542820', '#504014', '#5c5414', '#840404', '#684c34', '#7c3830', '#706420', '#7c5050', '#a4341c', '#946c00', '#985c40', '#8c8034', '#987454', '#b85444', '#b09018', '#b0745c', '#f40404', '#c87854', '#fc6854', '#e0a484', '#fc9468', '#fccc2c', '#10fc18', '#0c0020', '#1c1c2c', '#24244c', '#282c68', '#2c3084', '#2018b8', '#343cac', '#686894', '#6490fc', '#7cacfc', '#00e4fc', '#9c9040', '#a89454', '#bca45c', '#ccb860', '#e8d880', '#ecc4b0', '#fcfc38', '#fcfc7c', '#fcfca4', '#080808', '#101010', '#181818', '#282828', '#343434', '#4c3c38', '#444444', '#484858', '#585868', '#746838', '#78645c', '#60607c', '#847474', '#84849c', '#ac8c7c', '#ac9894', '#9090b8', '#b8b8e8', '#f88c14', '#10543c', '#209070', '#2cb494', '#042064', '#481c50', '#083498', '#683078', '#88409c', '#0c48cc', '#bcb834', '#dcdc3c', '#100000', '#240000', '#340000', '#480000', '#601804', '#8c2808', '#c81818', '#e02c2c', '#e82020', '#e85014', '#fc2020', '#e87824', '#f8ac3c', '#001400', '#002800', '#004400', '#006400', '#088008', '#249824', '#3c9c3c', '#58b058', '#68b868', '#80c480', '#94d494', '#0c1424', '#243c64', '#305084', '#385c94', '#4874b4', '#5484c4', '#6094d4', '#78b4ec', '#141008', '#18140c', '#28300c', '#101018', '#141420', '#2c2c40', '#444c68', '#040404', '#1c1810', '#201c14', '#24201c', '#30281c', '#40382c', '#544834', '#685c4c', '#907c64', '#282010', '#2c2414', '#342c18', '#382c1c', '#3c301c', '#403420', '#443824', '#504424', '#584c28', '#64582c', '#0c1004', '#141804', '#1c2008', '#20280c', '#343c10', '#404810', '#202030', '#141414', '#20181c', '#202020', '#282018', '#282424', '#302c2c', '#3c3038', '#3c383c', '#483c30', '#443440', '#544048', '#5c6464', '#6c7478', '#584e2f', '#4d432c', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#000000', '#ffffff'],
@@ -191,7 +249,7 @@
         var mapnameEnabledColors = [];
 
         var colorTagMap = colorTagTable[wf_settings["tileset_index"]];
-        var chosenColors = [85, 199];
+        var chosenColors = [85, 134, 199];
         var chosenColorsForUse = [];
 
         // Create the color options
@@ -201,18 +259,29 @@
                 <div class="color-option">
                     <div class="color-indicator" style="background-color: ${colorTagMap[color]};"></div>
                     <span class="color-number">${color}</span>
-                    <input type="checkbox" id="color${color}" ${checkboxAttributes}>
+                    <input type="checkbox" id="color${color}" ${checkboxAttributes} onchange="checkChanged(this, ${color})">
                 </div>
             `;
         }
-        //
-        var defaultAvailable = defaultAvailableColors.sort().map(color => createColorOption(color, true, true));
+
+        function checkChanged(checkbox, color) {
+            if (checkbox.checked) {
+                chosenColorsForUse.push(color);
+            } else {
+                chosenColorsForUse = chosenColorsForUse.filter(c => c !== color);
+            }
+            refreshRequirements();
+        }
+
+        var defaultAvailable = defaultAvailableColors.sort((a, b) => a - b).map(color => createColorOption(color, true, true));
         var defaultAvailableHTML = defaultAvailable.join('');
         document.getElementById('default-available-colors').innerHTML = defaultAvailableHTML;
 
         function refreshColorAvailability() {
             // get new map name
-            var newMapName = document.getElementById('new-map-name').value;
+            var newMapName = unescapeMapName(document.getElementById("new-map-name-input").value);
+            // replace ascii code 0-31 into blank for unescapeMapName(newMapName)
+            document.getElementById("new-map-name-unescaped-and-cut").innerText = newMapName.replace(/[\x00-\x1F]/g, '');
             var newMapNameBytes = new TextEncoder().encode(newMapName);
             var new_map_name_length = newMapNameBytes.length;
             // if length is at least 32, make the length red
@@ -226,20 +295,24 @@
             // get the list of available colors by map name
             // discard all but the first 31 items of newMapNameBytes
             // and then convert to list while removing duplicants
-            var mapnameEnabledColors = [...new Set(newMapNameBytes.slice(0, 31))];
+            mapnameEnabledColors = [...new Set(newMapNameBytes.slice(0, 31))];
             // remove overlap with default available colors
             mapnameEnabledColors = mapnameEnabledColors.filter(color => !defaultAvailableColors.includes(color));
-            var mapnameEnabledColorOptions = mapnameEnabledColors.sort().map(color => createColorOption(color, true, true));
+            var mapnameEnabledColorOptions = mapnameEnabledColors.sort((a, b) => a - b).map(color => createColorOption(color, true, true));
             var mapnameEnabledColorOptionsHTML = mapnameEnabledColorOptions.join('');
             document.getElementById('available-colors-by-map').innerHTML = mapnameEnabledColorOptionsHTML;
 
             // additional colors
-            var additionalColorOptions = chosenColors.sort().map(color => createColorOption(color, chosenColorsForUse.includes(color), false));
+            var additionalColorOptions = chosenColors.filter(color => !mapnameEnabledColors.includes(color)).sort((a, b) => a - b)
+            additionalColorOptions = additionalColorOptions.map(color => createColorOption(color, chosenColorsForUse.includes(color), false));
             var additionalColorOptionsHTML = additionalColorOptions.join('');
             document.getElementById('additional-colors').innerHTML = additionalColorOptionsHTML;
 
             // refresh dropdown
             refreshDropdown();
+
+            // refresh requirements
+            refreshRequirements();
         }
 
         function chooseDropdownColor(color) {
@@ -250,6 +323,9 @@
         }
 
         function refreshDropdown() {
+            // Save the current scroll position
+            var scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
             // Get the dropdown content container
             var dropdownContent = document.querySelector('.dropdown .dropdown-content');
             dropdownContent.innerHTML = '';
@@ -259,6 +335,7 @@
                 colorIndexInt = parseInt(colorIndex);
                 if (chosenColors.includes(colorIndexInt) ||
                     defaultAvailableColors.includes(colorIndexInt) ||
+                    mapnameEnabledColors.includes(colorIndexInt) ||
                     colorIndexInt < 8 || // color not represented correctly in SC
                     colorIndexInt >= 0b11111000) // not representable by utf-8
                     continue;
@@ -284,16 +361,49 @@
                 // Add the color option to the dropdown content
                 dropdownContent.appendChild(colorOption);
             }
+            // Restore the scroll position after 1 second
+            setTimeout(function () { window.scrollTo(0, scrollPosition); }, 50); // could be made better...
         }
 
-        refreshDropdown();
+        function requirementButtonClick(character) {
+            document.getElementById('new-map-name-input').value += character;
+            refreshColorAvailability();
+        }
+
+        // Create the refreshment bar
+        function createRequirement(color) {
+            var corresponding_character = '';
+            if (color < 128) {
+                corresponding_character = escapeMapName(String.fromCharCode(color));
+            } else if (color == 128) {
+                // return u+2800
+                corresponding_character = String.fromCharCode(0x2800);
+            } else {
+                // return u+2800 + color
+                corresponding_character = String.fromCharCode(0x2800 + color);
+            }
+            return `
+                <div class="requirement">
+                    <span style="color: red;">* No character matching with color ${color}.</span>
+                    <input type="button" onclick="requirementButtonClick('${corresponding_character}')">
+                </div>
+            `;
+        }
+
+        function refreshRequirements() {
+            // get a list of chosenColorsForUse that are not in mapnameEnabledColors
+            var missingColors = chosenColorsForUse.filter(color => !mapnameEnabledColors.includes(color)).map(color => createRequirement(color));
+            var missingColorsHTML = missingColors.join('');
+            document.getElementById('required-characters').innerHTML = missingColorsHTML;
+        }
+
 
         refreshColorAvailability();
 
-        function addRow() {
-            var table = document.getElementById("myTable");
+        function addRow(tableId) {
+            var table = document.getElementById(tableId);
             var row = table.insertRow(-1);
-            for (var i = 0; i < 5; i++) {
+            for (var i = 0; i < 6; i++) {
                 var cell = row.insertCell(i);
                 cell.innerHTML = "New Cell";
             }
