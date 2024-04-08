@@ -149,32 +149,17 @@
             </div>
         </div>
 
-        <div class="column">
-            <!-- colors table -->
-            <h3>Terran/Protoss</h3>
-            <button onclick="addRow('tp')" id="tp-button">Add Row</button>
-            <br><br>
-            <table class="color-table" id="tp-table">
-                <thead>
-                    <tr>
-                        <th>Index</th>
-                        <th>Color 1</th>
-                        <th>Color 2</th>
-                        <th>Color 3</th>
-                        <th>Color 4</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
+        <div class="column" id="right">
+            <h2>Output plugin settings</h2>
+            Copy the following text to the plugin settings.
+            <pre id="output" style="border: 1px solid black;">[wf_colors]</pre>
         </div>
     </div>
 
     <script>
 
         var wf_settings = {
-            "scenario_name_original": "\\mapname 한글 포함",
+            "scenario_name_original": "^_^",
             "scenario_name_new": null,
             "tileset_index": 4,
             "dimensions_are_256_256": false,
@@ -384,7 +369,7 @@
             }
             return `
                 <div class="requirement">
-                    <span style="color: red;">* No character matching with color ${color}.</span>
+                    <span style="color: red;">* No character matching with the color ${color}.</span>
                     <button onclick="requirementButtonClick('${corresponding_character}')">Add corresponding character ${corresponding_character}</button>
                 </div>
             `;
@@ -401,15 +386,96 @@
 
 
         // PART TWO: TABLES
+        function createColorTable(id, full_name, row_count) {
+            var headers = '';
+            for (var i = 0; i < row_count; i++) {
+                headers += `<th>Color ${i + 1}</th>`;
+            }
+            return `
+                <h3>${full_name}</h3>
+                <button onclick="addRow('${id}', ${row_count})" id="${id}-button">Add Row</button>
+                <br><br>
+                <table class="color-table" id="${id}-table">
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            ${headers}
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            `;
+        }
 
-        function addRow(tableId) {
-            var table = document.getElementById(tableId);
+        document.getElementById("right").innerHTML += createColorTable('tp', "Terran/Protoss", 4);
+        document.getElementById("right").innerHTML += createColorTable('z', "Zerg", 4);
+        document.getElementById("right").innerHTML += createColorTable('s', "Shields", 2);
+
+        function ColorAssignment(index, colors) {
+            this.index = index;
+            this.colors = colors;
+        }
+
+        assignment_table = new Map()
+        assignment_table['tp'] = new Map();
+        assignment_table['z'] = new Map();
+        assignment_table['s'] = new Map();
+
+        function addRow(tableId, numColumns) {
+            existing_assignments = assignment_table[tableId];
+            var nextIndex = 0;
+            for (var i = 0; i < 30; i++) {
+                if (!existing_assignments.has(i)) {
+                    nextIndex = i;
+                    break;
+                }
+            }
+            if (i == 30) {
+                alert("Cannot add more rows.");
+                return;
+            }
+
+            existing_assignments.set(nextIndex, new ColorAssignment(nextIndex, Array(numColumns).fill(135)));
+
+            var table = document.getElementById(tableId + "-table");
             var row = table.insertRow(-1);
-            for (var i = 0; i < 6; i++) {
+            row.id = `${tableId}-row-${nextIndex}`;
+            for (var i = 0; i < numColumns + 2; i++) {
                 var cell = row.insertCell(i);
-                cell.innerHTML = "New Cell";
+                switch (i) {
+                    case 0:
+                        cell.innerHTML = nextIndex;
+                        break;
+                    case numColumns + 1:
+                        cell.innerHTML = `<button onclick="removeRow('${tableId}', ${nextIndex})">Remove</button>`;
+                        break;
+                    default:
+                        cell.innerHTML = `<input type="number" id="${tableId}-row-${nextIndex}-color-${i - 1}" min="0" max="255" value="135" style="width: 50px;"
+                                           onchange="assignmentColorChanged('${tableId}', '${tableId}-row-${nextIndex}-color-${i - 1}', ${nextIndex})">
+                                          <div class="color-indicator" id="${tableId}-row-${nextIndex}-color-${i - 1}-indicator" style="background-color: ${colorTagMap[135]};"></div>`;
+                        break;
+                }
             }
         }
+        
+        function removeRow(tableId, index) {
+            assignment_table[tableId].delete(index);
+            var table = document.getElementById(tableId + "-table");
+            var row = document.getElementById(`${tableId}-row-${index}`);
+            table.deleteRow(row.rowIndex);
+        }
+
+        function assignmentColorChanged(tableId, inputId, index) {
+            var color = parseInt(document.getElementById(inputId).value);
+            if (color < 0 || color > 255) {
+                return;
+            }
+            assignment_table[tableId].get(index).colors[parseInt(inputId.split('-')[3])] = color;
+            document.getElementById(inputId + "-indicator").style.backgroundColor = colorTagMap[color];
+        }
+
     </script>
 </body>
 
