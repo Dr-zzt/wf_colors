@@ -123,33 +123,33 @@
 <body>
     <div class="row">
         <div class="column">
-            <h2>Map name</h2>
+            <h2>맵 제목</h2>
             <div id="map-name">
-                Base name: <b><span id="base-map-name"></span></b> (<span id="base-map-name-length"></span> bytes)
+                원래 제목: <b><span id="base-map-name"></span></b> (<span id="base-map-name-length"></span> bytes)
                 <br>
-                New name: <input type="text" id="new-map-name-input" oninput="refreshColorAvailability()">
+                새 제목: <input type="text" id="new-map-name-input" oninput="refreshColorAvailability()">
                 <span id="new-map-name-unescaped-and-cut"></span> (<span id="new-map-name-length"></span> bytes)
                 <br><br>
                 <div id="required-characters"></div>
                 <br>
             </div>
-            <h2>Available colors by default</h2>
+            <h2>기본 활용 가능 색상</h2>
             <div id="default-available-colors" class="color-options-container"></div>
-            <h2>Available colors by map name</h2>
+            <h2>맵 제목에 의해 쓸 수 있는 색상</h2>
             <div id="available-colors-by-map" class="color-options-container"></div>
-            <h2>Choose additional colors to use</h2>
+            <h2>더 쓰고 싶은 색상 선택</h2>
             <!-- Color options -->
             <!-- object with element id color-options-container-->
             <div id="additional-colors" class="color-options-container"></div>
             <!-- Dropdown menu here-->
             <div class="dropdown">
-                <span class="dropdown-indicator">More colors... ▼</span>
+                <span class="dropdown-indicator">색상 더 보기 ▼</span>
                 <div class="dropdown-content">
                 </div>
             </div>
-            <h2>Output plugin settings</h2>
-            Copy the following text to the plugin settings.
-            <button onclick="copyToClipboard()">Copy to clipboard</button>
+            <h2>플러그인 세팅</h2>
+            아래 내용을 플러그인 설정에 붙여넣으세요.
+            <button onclick="copyToClipboard()">클립보드에 복사</button>
             <span id="copy-success"></span>
             <pre id="output" style="border: 1px solid black;"></pre>
         </div>
@@ -165,8 +165,13 @@
             "scenario_name_new": null,
             "tileset_index": 4,
             "dimensions_are_256_256": false,
-            "human_plus_computer_is_eight": true
+            "human_plus_computer_is_eight": true,
+            "assignment_table": {
+                "tp": new Map(), "z": new Map(), "s": new Map()
+            }
         };
+
+        // REPLACE HERE //
 
         document.getElementById("base-map-name").innerText = wf_settings.scenario_name_original;
         // set inner text of base-map-name-length to the length of the base map name in bytes when encoded to utf-8
@@ -176,7 +181,7 @@
             var escapedMapName = "";
             for (var i = 0; i < mapName.length; i++) {
                 var charCode = mapName.charCodeAt(i);
-                if (charCode < 32 || charCode == 127) {
+                if (charCode < 32 || charCode == 127 || charCode == 58 /* colon */) {
                     escapedMapName += "\\x" + charCode.toString(16).padStart(2, "0");
                 } else if (charCode == 92) { // backslash
                     escapedMapName += "\\\\"; // escape backslashes
@@ -205,6 +210,9 @@
                         // Handle escaped backslashes
                         mapName += "\\";
                         i++; // Skip over this escape sequence
+                    } else {
+                        // If the backslash is not followed by an x or another backslash, just add the backslash to the map name
+                        mapName += "\\";
                     }
                 } else {
                     mapName += escapedMapName[i];
@@ -282,7 +290,7 @@
             // get the list of available colors by map name
             // discard all but the first 31 items of newMapNameBytes
             // and then convert to list while removing duplicants
-            mapnameEnabledColors = [...new Set(newMapNameBytes.slice(0, 31))];
+            mapnameEnabledColors = [...new Set(newMapNameBytes.slice(0, 31))].filter(color => color >= 14);
             // remove overlap with default available colors
             mapnameEnabledColors = mapnameEnabledColors.filter(color => !defaultAvailableColors.includes(color));
             var mapnameEnabledColorOptions = mapnameEnabledColors.sort((a, b) => a - b).map(color => createColorOption(color, true, true));
@@ -326,7 +334,7 @@
                 if (chosenColors.includes(colorIndexInt) ||
                     defaultAvailableColors.includes(colorIndexInt) ||
                     mapnameEnabledColors.includes(colorIndexInt) ||
-                    colorIndexInt < 8 || // color not represented correctly in SC
+                    colorIndexInt < 14 || // color not represented correctly in SC
                     colorIndexInt >= 0b11111000 || // not representable by utf-8
                     colorIndexInt >= 192) // not worth the effort to support this
                     continue;
@@ -374,8 +382,8 @@
             }
             return `
                 <div class="requirement">
-                    <span style="color: red;">* No character matching with the color ${color}.</span>
-                    <button onclick="requirementButtonClick('${corresponding_character}')">Add corresponding character ${corresponding_character}</button>
+                    <span style="color: red;">* ${color}번에 대응되는 글자가 없습니다.</span>
+                    <button onclick="requirementButtonClick('${corresponding_character}')">연관 글자 ${corresponding_character} 추가하기</button>
                 </div>
             `;
         }
@@ -391,16 +399,16 @@
         function createColorTable(id, full_name, row_count) {
             var headers = '';
             for (var i = 0; i < row_count; i++) {
-                headers += `<th>Color ${i + 1}</th>`;
+                headers += `<th>${i + 1}번 색상</th>`;
             }
             return `
                 <h3>${full_name}</h3>
-                <button onclick="addRow('${id}', ${row_count})" id="${id}-button">Add Row</button>
+                <button onclick="addRow('${id}', ${row_count})" id="${id}-button">행 추가</button>
                 <br><br>
                 <table class="color-table" id="${id}-table">
                     <thead>
                         <tr>
-                            <th>Index</th>
+                            <th>번호</th>
                             ${headers}
                             <th></th>
                         </tr>
@@ -411,19 +419,16 @@
             `;
         }
 
-        document.getElementById("right").innerHTML += createColorTable('tp', "Terran/Protoss", 4);
-        document.getElementById("right").innerHTML += createColorTable('z', "Zerg", 4);
-        document.getElementById("right").innerHTML += createColorTable('s', "Shields", 2);
+        document.getElementById("right").innerHTML += createColorTable('tp', "테란/프로토스", 4);
+        document.getElementById("right").innerHTML += createColorTable('z', "저그", 4);
+        document.getElementById("right").innerHTML += createColorTable('s', "실드", 2);
 
         function ColorAssignment(index, colors) {
             this.index = index;
             this.colors = colors;
         }
 
-        assignment_table = new Map()
-        assignment_table['tp'] = new Map();
-        assignment_table['z'] = new Map();
-        assignment_table['s'] = new Map();
+        assignment_table = wf_settings["assignment_table"];
 
         function addRow(tableId, numColumns) {
             existing_assignments = assignment_table[tableId];
@@ -451,7 +456,7 @@
                         cell.innerHTML = `<span id=${tableId}-row-${nextIndex}-sign>${nextIndex}</span>`;
                         break;
                     case numColumns + 1:
-                        cell.innerHTML = `<button onclick="removeRow('${tableId}', ${nextIndex})">Remove</button>`;
+                        cell.innerHTML = `<button onclick="removeRow('${tableId}', ${nextIndex})">제거</button>`;
                         break;
                     default:
                         cell.innerHTML = `<input type="number" id="${tableId}-row-${nextIndex}-color-${i - 1}" min="0" max="255" value="135" style="width: 50px;"
@@ -518,14 +523,17 @@
             }
 
             var output =
-                `:: 이 아래를 복사해서 사용하면 됩니다.
-[wf_colors]
+                `[wf_colors]
 
 :: 편집 창을 다시 띄우고 싶다면 아래 부분을 지우거나 False를 True로 바꾸세요.
 config_mode: False
 
 
 `;
+            // add new map name to output
+            output += `:: 새로운 맵 제목
+new_map_title:${document.getElementById("new-map-name-input").value}\n\n`;
+            // output color assignments
             for (var tableId in assignment_table) {
                 var table = assignment_table[tableId];
                 for (var [index, assignment] of table) {

@@ -1,4 +1,4 @@
-solutions_tp = r"""820246,34,27,0x669b44,0x669de8
+solutions = r"""820246,34,27,0x669b44,0x669de8
 820255,34,27,0x669b48,0x669dec
 820265,34,27,0x669b4c,0x669df0
 820275,34,27,0x669b50,0x669df4
@@ -33,11 +33,11 @@ solutions_tp = r"""820246,34,27,0x669b44,0x669de8
 
 if __name__ == '__main__':
     output = ""
-    for line in solutions_tp.splitlines():
+    for line in solutions.splitlines():
         line = line.strip()
         if not line:
             continue
         line = line.split(',')
-        line = '[' + ','.join(line[:3]) + ']'
-        output += line + ','
+        line = '(' + ', '.join(line[3:]) + ')'
+        output += line + ', '
     print(output)
