@@ -147,12 +147,14 @@
                 <div class="dropdown-content">
                 </div>
             </div>
+            <h2>Output plugin settings</h2>
+            Copy the following text to the plugin settings.
+            <button onclick="copyToClipboard()">Copy to clipboard</button>
+            <span id="copy-success"></span>
+            <pre id="output" style="border: 1px solid black;"></pre>
         </div>
 
         <div class="column" id="right">
-            <h2>Output plugin settings</h2>
-            Copy the following text to the plugin settings.
-            <pre id="output" style="border: 1px solid black;">[wf_colors]</pre>
         </div>
     </div>
 
@@ -298,6 +300,9 @@
 
             // refresh requirements
             refreshRequirements();
+
+            // update output
+            updateOutput();
         }
 
         function chooseDropdownColor(color) {
@@ -382,9 +387,6 @@
             document.getElementById('required-characters').innerHTML = missingColorsHTML;
         }
 
-        refreshColorAvailability();
-
-
         // PART TWO: TABLES
         function createColorTable(id, full_name, row_count) {
             var headers = '';
@@ -446,34 +448,113 @@
                 var cell = row.insertCell(i);
                 switch (i) {
                     case 0:
-                        cell.innerHTML = nextIndex;
+                        cell.innerHTML = `<span id=${tableId}-row-${nextIndex}-sign>${nextIndex}</span>`;
                         break;
                     case numColumns + 1:
                         cell.innerHTML = `<button onclick="removeRow('${tableId}', ${nextIndex})">Remove</button>`;
                         break;
                     default:
                         cell.innerHTML = `<input type="number" id="${tableId}-row-${nextIndex}-color-${i - 1}" min="0" max="255" value="135" style="width: 50px;"
-                                           onchange="assignmentColorChanged('${tableId}', '${tableId}-row-${nextIndex}-color-${i - 1}', ${nextIndex})">
+                                           onchange="assignmentColorChanged('${tableId}', '${tableId}-row-${nextIndex}-color-${i - 1}', ${nextIndex}, ${i - 1})">
                                           <div class="color-indicator" id="${tableId}-row-${nextIndex}-color-${i - 1}-indicator" style="background-color: ${colorTagMap[135]};"></div>`;
                         break;
                 }
             }
+            updateOutput();
         }
-        
+
         function removeRow(tableId, index) {
             assignment_table[tableId].delete(index);
             var table = document.getElementById(tableId + "-table");
             var row = document.getElementById(`${tableId}-row-${index}`);
             table.deleteRow(row.rowIndex);
+            updateOutput();
         }
 
-        function assignmentColorChanged(tableId, inputId, index) {
+        function assignmentColorChanged(tableId, inputId, index, colorIndex) {
             var color = parseInt(document.getElementById(inputId).value);
             if (color < 0 || color > 255) {
                 return;
             }
-            assignment_table[tableId].get(index).colors[parseInt(inputId.split('-')[3])] = color;
+            assignment_table[tableId].get(index).colors[colorIndex] = color;
             document.getElementById(inputId + "-indicator").style.backgroundColor = colorTagMap[color];
+            updateOutput();
+        }
+
+        function checkTableValidity() {
+            var valid = true;
+            for (var tableId in assignment_table) {
+                var table = assignment_table[tableId];
+                for (var [index, assignment] of table) {
+                    var this_index_is_valid = true;
+                    for (var color of assignment.colors) {
+                        if (!mapnameEnabledColors.includes(color) && !defaultAvailableColors.includes(color)) {
+                            valid = false;
+                            this_index_is_valid = false;
+                            // make corresponding sign red
+                            document.getElementById(`${tableId}-row-${index}-sign`).style.color = 'red';
+                        }
+                    }
+                    if (this_index_is_valid) {
+                        document.getElementById(`${tableId}-row-${index}-sign`).style.color = 'black';
+                    }
+                }
+            }
+            return valid;
+        }
+
+        var hpMap = new Map();
+        hpMap['tp'] =
+            [[318815, 34, 27], [318818, 34, 27], [318822, 34, 27], [318826, 34, 27], [318830, 34, 27], [318834, 34, 27], [318837, 34, 27], [318841, 34, 27], [318845, 34, 27], [318849, 34, 27], [318852, 34, 27], [318856, 34, 27], [318860, 34, 27], [318864, 34, 27], [318868, 34, 27], [318871, 34, 27], [318875, 34, 27], [318879, 34, 27], [318883, 34, 27], [318886, 34, 27], [318890, 34, 27], [318894, 34, 27], [318898, 34, 27], [318902, 34, 27], [318905, 34, 27], [318909, 34, 27], [318913, 34, 27], [318917, 34, 27], [318920, 34, 27], [318924, 34, 27], [318928, 34, 27]];
+        hpMap['z'] =
+            [[573929, 34, 27], [573945, 34, 27], [573950, 34, 27], [573956, 34, 27], [573961, 34, 27], [573968, 34, 27], [573975, 34, 27], [573982, 34, 27], [573988, 34, 27], [573995, 34, 27], [574002, 34, 27], [574009, 34, 27], [574016, 34, 27], [574022, 34, 27], [574029, 34, 27], [574036, 34, 27], [574043, 34, 27], [574050, 34, 27], [574056, 34, 27], [574063, 34, 27], [574070, 34, 27], [574077, 34, 27], [574084, 34, 27], [574090, 34, 27], [574097, 34, 27], [574104, 34, 27], [574111, 34, 27], [574118, 34, 27], [574124, 34, 27], [574131, 34, 27], [574138, 34, 27]];
+        hpMap['s'] =
+            [[820246, 34, 27], [820255, 34, 27], [820265, 34, 27], [820275, 34, 27], [820284, 34, 27], [820294, 34, 27], [820304, 34, 27], [820314, 34, 27], [820323, 34, 27], [820333, 34, 27], [820343, 34, 27], [820352, 34, 27], [820362, 34, 27], [940491, 39, 31], [940502, 39, 31], [940524, 39, 31], [941015, 39, 31], [941026, 39, 31], [941037, 39, 31], [941048, 39, 31], [941059, 39, 31], [941070, 39, 31], [941098, 39, 31], [941134, 39, 31], [941178, 39, 31], [941222, 39, 31], [941267, 39, 31], [941311, 39, 31], [941355, 39, 31], [941488, 39, 31], [941532, 39, 31]];
+
+        function updateOutput() {
+            if (!checkTableValidity()) {
+                document.getElementById('output').innerText = '색상이 잘못되었습니다.';
+                return;
+            }
+
+            var output =
+                `:: 이 아래를 복사해서 사용하면 됩니다.
+[wf_colors]
+
+:: 편집 창을 다시 띄우고 싶다면 아래 부분을 지우거나 False를 True로 바꾸세요.
+config_mode: False
+
+
+`;
+            for (var tableId in assignment_table) {
+                var table = assignment_table[tableId];
+                for (var [index, assignment] of table) {
+                    var hpInfo = hpMap[tableId][index];
+                    output += `:: 현재 체/실: ${hpInfo[0]}, 32비트 최대 체/실: ${hpInfo[1]}, 64비트 최대 체/실: ${hpInfo[2]}\n`;
+                    output += `${tableId}_${index}: `;
+                    output += assignment.colors.join(',');
+                    output += '\n\n';
+                }
+            }
+            document.getElementById('output').innerText = output;
+        }
+
+        refreshColorAvailability();
+
+
+        function copyToClipboard() {
+            var outputText = document.getElementById('output').innerText;
+            navigator.clipboard.writeText(outputText)
+                .then(() => {
+                    var copySuccess = document.getElementById('copy-success');
+                    copySuccess.innerText = 'Copied!';
+                    setTimeout(() => {
+                        copySuccess.innerText = '';
+                    }, 1000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
         }
 
     </script>
