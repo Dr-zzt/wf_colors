@@ -167,11 +167,26 @@
             "dimensions_are_256_256": false,
             "human_plus_computer_is_eight": true,
             "assignment_table": {
-                "tp": new Map(), "z": new Map(), "s": new Map()
+                "tp": {},
+                "z": {
+                    "0": {
+                        "index": 0,
+                        "colors": [
+                            85,
+                            81,
+                            83,
+                            85
+                        ]
+                    }
+                },
+                "s": {}
             }
         };
 
         // REPLACE HERE //
+        for (let key of ['tp', 'z', 's']) {
+            wf_settings.assignment_table[key] = new Map(Object.entries(wf_settings.assignment_table[key]).map(([k, v]) => [parseInt(k), v]));
+        }
 
         document.getElementById("base-map-name").innerText = wf_settings.scenario_name_original;
         // set inner text of base-map-name-length to the length of the base map name in bytes when encoded to utf-8
@@ -430,6 +445,38 @@
 
         assignment_table = wf_settings["assignment_table"];
 
+        function createRow(tableId, index, numColumns, assignment) {
+            var table = document.getElementById(tableId + "-table");
+            var row = table.insertRow(-1);
+            row.id = `${tableId}-row-${index}`;
+            for (var i = 0; i < numColumns + 2; i++) {
+                var cell = row.insertCell(i);
+                switch (i) {
+                    case 0:
+                        cell.innerHTML = `<span id=${tableId}-row-${index}-sign>${index}</span>`;
+                        break;
+                    case numColumns + 1:
+                        cell.innerHTML = `<button onclick="removeRow('${tableId}', ${index})">제거</button>`;
+                        break;
+                    default:
+                        cell.innerHTML = `<input type="number" id="${tableId}-row-${index}-color-${i - 1}" min="0" max="255" value="${assignment.colors[i - 1]}" style="width: 50px;"
+                                           onchange="assignmentColorChanged('${tableId}', '${tableId}-row-${index}-color-${i - 1}', ${index}, ${i - 1})">
+                                          <div class="color-indicator" id="${tableId}-row-${index}-color-${i - 1}-indicator" style="background-color: ${colorTagMap[assignment.colors[i - 1]]};"></div>`;
+                        break;
+                }
+            }
+        }
+
+        function addInitialRows() {
+            console.log(assignment_table);
+            for (var tableId in assignment_table) {
+                var table = assignment_table[tableId];
+                for (var [index, assignment] of table) {
+                    createRow(tableId, index, assignment.colors.length, assignment);
+                }
+            }
+        }
+
         function addRow(tableId, numColumns) {
             existing_assignments = assignment_table[tableId];
             var nextIndex = 0;
@@ -444,27 +491,11 @@
                 return;
             }
 
-            existing_assignments.set(nextIndex, new ColorAssignment(nextIndex, Array(numColumns).fill(135)));
+            var newAssignment = new ColorAssignment(nextIndex, Array(numColumns).fill(135));
+            existing_assignments.set(nextIndex, newAssignment);
 
-            var table = document.getElementById(tableId + "-table");
-            var row = table.insertRow(-1);
-            row.id = `${tableId}-row-${nextIndex}`;
-            for (var i = 0; i < numColumns + 2; i++) {
-                var cell = row.insertCell(i);
-                switch (i) {
-                    case 0:
-                        cell.innerHTML = `<span id=${tableId}-row-${nextIndex}-sign>${nextIndex}</span>`;
-                        break;
-                    case numColumns + 1:
-                        cell.innerHTML = `<button onclick="removeRow('${tableId}', ${nextIndex})">제거</button>`;
-                        break;
-                    default:
-                        cell.innerHTML = `<input type="number" id="${tableId}-row-${nextIndex}-color-${i - 1}" min="0" max="255" value="135" style="width: 50px;"
-                                           onchange="assignmentColorChanged('${tableId}', '${tableId}-row-${nextIndex}-color-${i - 1}', ${nextIndex}, ${i - 1})">
-                                          <div class="color-indicator" id="${tableId}-row-${nextIndex}-color-${i - 1}-indicator" style="background-color: ${colorTagMap[135]};"></div>`;
-                        break;
-                }
-            }
+            createRow(tableId, nextIndex, numColumns, newAssignment);
+
             updateOutput();
         }
 
@@ -547,6 +578,7 @@ new_map_title:${document.getElementById("new-map-name-input").value}\n\n`;
             document.getElementById('output').innerText = output;
         }
 
+        addInitialRows();
         refreshColorAvailability();
 
 
@@ -555,7 +587,7 @@ new_map_title:${document.getElementById("new-map-name-input").value}\n\n`;
             navigator.clipboard.writeText(outputText)
                 .then(() => {
                     var copySuccess = document.getElementById('copy-success');
-                    copySuccess.innerText = 'Copied!';
+                    copySuccess.innerText = '복사 완료!';
                     setTimeout(() => {
                         copySuccess.innerText = '';
                     }, 1000);
