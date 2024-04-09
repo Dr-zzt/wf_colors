@@ -1,0 +1,152 @@
+S_ProjectSET
+Version : 0.18.1.7
+InputMap : C:\Users\_\Documents\StarCraft\Maps\AdvancedWireframe\SampleMap\Map\!_very_simple_map.scx
+OutputMap : C:\Users\_\Documents\StarCraft\Maps\AdvancedWireframe\SampleMap\WF_customize_output.scx
+euddraftuse : True
+loadfromCHK : True
+UsedSetting0 : False
+UsedSetting1 : False
+UsedSetting2 : False
+UsedSetting3 : False
+UsedSetting4 : False
+UsedSetting5 : False
+UsedSetting6 : False
+UsedSetting7 : True
+UsedSetting8 : False
+EUDEditorDebug : False
+epTraceDebug : False
+triggerSetTouse : True
+triggerPlayer : 7
+E_ProjectSET
+S_DatEditSET
+E_DatEditSET
+S_FireGraftSET
+E_FireGraftSET
+S_BtnSET
+E_BtnSET
+S_ReqSET
+E_ReqSET
+S_BinEditSET
+projectsceneDataCount : 1
+projectsceneData 0binDataCount : 26
+E_BinEditSET
+S_SoundPlayerSET
+Soundinterval : 3
+E_SoundPlayerSET
+S_GRPEditorSET
+GRPEditorDATCount : 0
+GRPEditorUsingDATCount : 0
+GRPEditorUsingindexDATCount : 0
+E_GRPEditorSET
+S_TileSET
+ProjectTileUseFile : False
+ProjectTileSetFileName : 
+ProjectTIleMSetCount : 25249
+ProjectTIleMSetArray : 
+ProjectTileSetDataCount : 0
+ProjectMTXMDATACount : 65536
+ProjectMTXMDATAArray : 
+E_TileSET
+S_SCDBSet
+SCDBDeath : 
+SCDBLoc : 
+SCDBVariable : 
+SCDBLocLoad : 
+SCDBUse : False
+SCDBSerial : 0
+SCDBMaker : Noname
+SCDBMapName : Noname
+SCDBDataSize : 4
+E_SCDBSet
+S_FileManagerSET
+statlang : 0
+stattextdicCount : 0
+wireuse : True
+E_FileManagerSET
+S_TriggerEditorSET
+&AddText&
+Type:23,False,False,False
+
+ElementsCount:0
+END
+
+&functions&
+Type:15,False,False,False
+ElementsCount:0
+END
+
+&GlobalVar&
+Type:0,False,False,False
+ElementsCount:0
+END
+
+&RawTriggers&
+Type:25,False,False,False
+ElementsCount:0
+END
+
+&onPluginStart&
+Type:0,False,False,False
+ElementsCount:0
+END
+
+&beforeTriggerExec&
+Type:0,False,False,False
+ElementsCount:0
+END
+
+&afterTriggerExec&
+Type:0,False,False,False
+ElementsCount:0
+END
+
+
+E_TriggerEditorSET
+S_PluginSET
+soundstopper : False
+scmloader : False
+noAirColsion : False
+unlimiter : False
+keepSTR : False
+eudTurbo : True
+iscriptPatcher : 
+iscriptPatcheruse : False
+unpatcher : 
+unpatcheruse : False
+nqcuse : False
+nqcunit : 58
+nqclocs : 
+nqccommands : \TAB#0#0
+grpinjectoruse : False
+grpinjector_arrow : 
+grpinjector_drag : 
+grpinjector_illegal : 
+dataDumperuse : False
+dataDumper_user : 
+dataDumper_grpwire : 
+dataDumper_tranwire : 
+dataDumper_wirefram : 
+dataDumper_cmdicons : 
+dataDumper_stat_txt : 
+dataDumper_AIscript : 
+dataDumper_iscript : 
+dataDumper_grpwire_f : 0
+dataDumper_tranwire_f : 0
+dataDumper_wirefram_f : 0
+dataDumper_cmdicons_f : 0
+dataDumper_stat_txt_f : 0
+dataDumper_AIscript_f : 0
+dataDumper_iscript_f : 0
+extraedssetting : [../main.py]
+[wf_colors]
+
+:: 편집 창을 다시 띄우고 싶다면 아래 부분을 지우거나 False를 True로 바꾸세요.
+config_mode: False
+
+
+:: 새로운 맵 제목
+new_map_title:Q와프 테스트맵SUN
+
+:: 현재 체/실: 573929, 32비트 최대 체/실: 34, 64비트 최대 체/실: 27
+z_0: 85,81,83,85
+E_PluginSET
