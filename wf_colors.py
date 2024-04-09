@@ -39,7 +39,7 @@ class WFSettings:
     tileset_index: int
     dimensions_are_256_256: bool
     human_plus_computer_is_eight: bool
-    assignment_table: dict[str, dict[int, tuple[int]]]
+    assignment_table: dict[str, dict[int, dict]]
 
 
 def make_wf_settings() -> WFSettings:
@@ -68,7 +68,7 @@ def make_wf_settings() -> WFSettings:
     human_plus_computer_is_eight = {*chkt.getsection("OWNR")[:8]}.issubset({5, 6})
 
     # extract assignment table from settings
-    assignment_table: dict[str, dict[int, tuple[int]]] = {
+    assignment_table: dict[str, dict[int, dict]] = {
         "tp": {},
         "z": {},
         "s": {}
@@ -185,15 +185,15 @@ def setup_wf_colors(wf_settings: WFSettings):
 
     for index, assignment in wf_settings.assignment_table["tp"].items():
         DoActions([
-            SetMemory(tp_solutions[index][i], SetTo, sum(color_to_wf_index(assignment[j]) * (1 << (j * 8)) for j in range(4))) for i in range(2)
+            SetMemory(tp_solutions[index][i], SetTo, sum(color_to_wf_index(assignment["colors"][j]) * (1 << (j * 8)) for j in range(4))) for i in range(2)
         ])
     for index, assignment in wf_settings.assignment_table["z"].items():
         DoActions([
-            SetMemory(z_solutions[index][i], SetTo, sum(color_to_wf_index(assignment[j]) * (1 << (j * 8)) for j in range(4))) for i in range(2)
+            SetMemory(z_solutions[index][i], SetTo, sum(color_to_wf_index(assignment["colors"][j]) * (1 << (j * 8)) for j in range(4))) for i in range(2)
         ])
     for index, assignment in wf_settings.assignment_table["s"].items():
         DoActions([
-            SetMemory(s_solutions[index][i], SetTo, 0x10001 * sum(color_to_wf_index(assignment[j]) * (1 << (j * 8)) for j in range(2))) for i in range(2)
+            SetMemory(s_solutions[index][i], SetTo, 0x10001 * sum(color_to_wf_index(assignment["colors"][j]) * (1 << (j * 8)) for j in range(2))) for i in range(2)
         ])
 
 
