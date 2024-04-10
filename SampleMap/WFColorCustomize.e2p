@@ -1,7 +1,7 @@
 S_ProjectSET
 Version : 0.18.1.7
-InputMap : C:\Users\_\Documents\StarCraft\Maps\AdvancedWireframe\SampleMap\Map\!_very_simple_map.scx
-OutputMap : C:\Users\_\Documents\StarCraft\Maps\AdvancedWireframe\SampleMap\WF_customize_output.scx
+InputMap : C:\Users\WonJeongho\Documents\StarCraft\Maps\AdvancedWireframe\SampleMap\Map\!_very_simple_map.scx
+OutputMap : C:\Users\WonJeongho\Documents\StarCraft\Maps\AdvancedWireframe\SampleMap\WF_customize_output.scx
 euddraftuse : True
 loadfromCHK : True
 UsedSetting0 : False
@@ -147,6 +147,7 @@ config_mode: False
 :: 새로운 맵 제목
 new_map_title:Q와프 테스트맵SUN
 
+tp_0: 85,81,83,85
 :: 현재 체/실: 573929, 32비트 최대 체/실: 34, 64비트 최대 체/실: 27
 z_0: 85,81,83,85
 E_PluginSET

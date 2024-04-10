@@ -136,10 +136,6 @@ def unescape_map_name(escaped_map_name):
     return map_name
 
 
-def is32Bit():
-    return Memory(0x190913EC, AtLeast, 1)
-
-
 def setup_wf_colors(wf_settings: WFSettings):
     # un-escape new map name
     scenario_name_new = unescape_map_name(wf_settings.scenario_name_new)
@@ -157,7 +153,7 @@ def setup_wf_colors(wf_settings: WFSettings):
     wf_and_mapname_diff << 123 + \
         (0 if wf_settings.tileset_index == 0 else 1) + \
         (0 if wf_settings.dimensions_are_256_256 else 2) + \
-        EUDTernary(is32Bit())(0)(64) + \
+        EUDTernary(Is64BitWireframe())(64)(0) + \
         f_strlen(0x6D0F78) # Host name length
     
     if wf_settings.human_plus_computer_is_eight:
