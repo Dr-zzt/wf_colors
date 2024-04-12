@@ -116,7 +116,7 @@ def unescape_map_name(escaped_map_name):
         if escaped_map_name[i] == "\\":
             if i + 1 < len(escaped_map_name) and escaped_map_name[i + 1] == "x":
                 # Handle hexadecimal escape sequences
-                hex = escaped_map_name[i + 2:i + 4]
+                hex = escaped_map_name[i + 2:i + 4] if i + 4 < len(escaped_map_name) else ""
                 # if hex is not a valid 2-digit hexadecimal number, just add the backslash and x to the map name
                 if not re.match("^[0-9A-Fa-f]{2}$", hex):
                     map_name += "\\x"
@@ -124,6 +124,16 @@ def unescape_map_name(escaped_map_name):
                 else:
                     map_name += chr(int(hex, 16))
                     i += 4  # Skip over this escape sequence
+            elif i + 1 < len(escaped_map_name) and escaped_map_name[i + 1] == "u":
+                # Handle unicode escape sequences
+                hex = escaped_map_name[i + 2:i + 6] if i + 6 < len(escaped_map_name) else ""
+                # if hex is not a valid 4-digit hexadecimal number, just add the backslash and u to the map name
+                if not re.match("^[0-9A-Fa-f]{4}$", hex):
+                    map_name += "\\u"
+                    i += 2  # Skip over the backslash and u
+                else:
+                    map_name += chr(int(hex, 16))
+                    i += 6  # Skip over this escape sequence
             elif i + 1 < len(escaped_map_name) and escaped_map_name[i + 1] == "\\":
                 # Handle escaped backslashes
                 map_name += "\\"
