@@ -94,7 +94,9 @@ def make_wf_settings() -> WFSettings:
 # GUI for configuration mode
 
 def show_config_dialog(wf_settings: WFSettings):
-    html_content = temp_html_raw.replace("// REPLACE HERE //", f"wf_settings = {json.dumps(asdict(wf_settings), indent=4)}")
+    wf_settings_dict = asdict(wf_settings)
+    wf_settings_dict["scenario_name_new"] = unescape_map_name(wf_settings_dict["scenario_name_new"])
+    html_content = temp_html_raw.replace("// REPLACE HERE //", f"wf_settings = {json.dumps(wf_settings_dict, indent=4)}")
 
     # Write the HTML content to a temporary file
     temp_html_file = 'temp.html'
@@ -157,19 +159,36 @@ def setup_wf_colors(wf_settings: WFSettings):
         f_strlen(0x6D0F78) # Host name length
     
     if wf_settings.human_plus_computer_is_eight:
-        num_humans_in_game = EUDVariable()
-        num_humans_in_game << 0
-        for i in range(8):
-            if GetPlayerInfo(i).typestr != "Human":
-                continue
+        # Formula
+        # I am the only human player: -2
+        # I entered when there was only one player: -2
+        # --> This usually applies only to the second player but there could be edge cases
+        # However, those edge cases can't be detected and can't be detected so I just give up
+        # e.g. If there are observers --> X_X, there are too many edge cases
 
-            if EUDIf()(f_playerexist(i)):
-                num_humans_in_game += 1
-            EUDEndIf()
+        if EUDSwitch(f_dwread_epd(-11553 + 1 + 9 * f_getuserplayerid())): # storm ID
+            if EUDSwitchCase()(0):
+                num_humans_in_game = EUDVariable()
+                num_humans_in_game << 0
+                for i in range(8):
+                    if GetPlayerInfo(i).typestr != "Human":
+                        continue
+
+                    if EUDIf()(f_playerexist(i)):
+                        num_humans_in_game += 1
+                    EUDEndIf()
+                
+                if EUDIf()(num_humans_in_game == 1):
+                    wf_and_mapname_diff -= 2
+                EUDEndIf()
+                EUDBreak()
+            
+            if EUDSwitchCase()(1):
+                wf_and_mapname_diff -= 2
+                EUDBreak()
+
+        EUDEndSwitch()
         
-        if EUDIf()(num_humans_in_game == 1):
-            wf_and_mapname_diff -= 2
-        EUDEndIf()
 
     def color_to_wf_index(color: int):
         if color in default_available_colors:

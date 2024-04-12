@@ -192,9 +192,19 @@
         // set inner text of base-map-name-length to the length of the base map name in bytes when encoded to utf-8
         document.getElementById("base-map-name-length").innerText = new TextEncoder().encode(wf_settings.scenario_name_original).length;
 
+        blank_characters_available = [
+            "\u0085", "\u00A0", "\u061C", "\u115F", "\u1160", "\u1680", "\u180E", "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005", "\u2006", "\u2007", "\u2008", "\u2009", "\u200A", "\u200B", "\u200C", "\u200D", "\u200E", "\u200F", "\u2028", "\u2029", "\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\u202F", "\u205F", "\u2060", "\u2066", "\u2067", "\u2068", "\u2069", "\u2427", "\u2428", "\u2429", "\u242A", "\u242B", "\u242C", "\u242D", "\u242E", "\u242F", "\u2430", "\u2431", "\u2432", "\u2433", "\u2434", "\u2435", "\u2436", "\u2437", "\u2438", "\u2439", "\u243A", "\u243B", "\u243C", "\u243D", "\u243E", "\u243F", "\u2800", "\u3000", "\u3164", "\uFFA0", "\uFEFF"
+        ]
+
         function escapeMapName(mapName) {
             var escapedMapName = "";
             for (var i = 0; i < mapName.length; i++) {
+                // check if i_th character is a blank character
+                if (blank_characters_available.includes(mapName[i])) {
+                    escapedMapName += escape(mapName[i]);
+                } else {
+                    escapedMapName += mapName[i];
+                }
                 var charCode = mapName.charCodeAt(i);
                 if (charCode < 32 || charCode == 127 || charCode == 58 /* colon */) {
                     escapedMapName += "\\x" + charCode.toString(16).padStart(2, "0");
