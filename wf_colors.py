@@ -116,7 +116,7 @@ def unescape_map_name(escaped_map_name):
         if escaped_map_name[i] == "\\":
             if i + 1 < len(escaped_map_name) and escaped_map_name[i + 1] == "x":
                 # Handle hexadecimal escape sequences
-                hex = escaped_map_name[i + 2:i + 4] if i + 4 < len(escaped_map_name) else ""
+                hex = escaped_map_name[i + 2:i + 4] if i + 4 <= len(escaped_map_name) else ""
                 # if hex is not a valid 2-digit hexadecimal number, just add the backslash and x to the map name
                 if not re.match("^[0-9A-Fa-f]{2}$", hex):
                     map_name += "\\x"
@@ -126,7 +126,7 @@ def unescape_map_name(escaped_map_name):
                     i += 4  # Skip over this escape sequence
             elif i + 1 < len(escaped_map_name) and escaped_map_name[i + 1] == "u":
                 # Handle unicode escape sequences
-                hex = escaped_map_name[i + 2:i + 6] if i + 6 < len(escaped_map_name) else ""
+                hex = escaped_map_name[i + 2:i + 6] if i + 6 <= len(escaped_map_name) else ""
                 # if hex is not a valid 4-digit hexadecimal number, just add the backslash and u to the map name
                 if not re.match("^[0-9A-Fa-f]{4}$", hex):
                     map_name += "\\u"
@@ -205,7 +205,7 @@ def setup_wf_colors(wf_settings: WFSettings):
         if color in default_available_colors:
             return default_available_colors.index(color)
         else:
-            assert color in scenario_name_new_bytes_list, f"요구되는 색상 {color}을 맵 제목에서 찾을 수 없었습니다."
+            assert color in scenario_name_new_bytes_list, f"요구되는 색상 {color}을 맵 제목 ({scenario_name_new_bytes_list})에서 찾을 수 없었습니다."
             return scenario_name_new_bytes_list.index(color) + wf_and_mapname_diff
         
 
