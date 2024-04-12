@@ -2,7 +2,7 @@ import re
 from eudplib import *
 from eudplib.core.mapdata.stringmap import strmap
 from typing import TYPE_CHECKING, Optional
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict
 
 import webbrowser
 import os
@@ -161,13 +161,14 @@ def setup_wf_colors(wf_settings: WFSettings):
     if wf_settings.human_plus_computer_is_eight:
         # Formula
         # I am the only human player: -2
+
         # I entered when there was only one player: -2
         # --> This usually applies only to the second player but there could be edge cases
         # However, those edge cases can't be detected and can't be detected so I just give up
         # e.g. If there are observers --> X_X, there are too many edge cases
 
         if EUDSwitch(f_dwread_epd(-11553 + 1 + 9 * f_getuserplayerid())): # storm ID
-            if EUDSwitchCase()(0):
+            if EUDSwitchCase()(0): # 0 (host)
                 num_humans_in_game = EUDVariable()
                 num_humans_in_game << 0
                 for i in range(8):
@@ -254,6 +255,10 @@ temp_html_raw = r"""<!DOCTYPE html>
         .column {
             flex: 1;
             /* This will make each column take up an equal amount of space */
+        }
+
+        .warning {
+            color: rgb(128, 0, 0);
         }
 
         .color-options-container {
@@ -360,6 +365,7 @@ temp_html_raw = r"""<!DOCTYPE html>
 <body>
     <div class="row">
         <div class="column">
+            <span class="warning" id="warning"></span>
             <h2>맵 제목</h2>
             <div id="map-name">
                 원래 제목: <b><span id="base-map-name"></span></b> (<span id="base-map-name-length"></span> bytes)
@@ -399,7 +405,7 @@ temp_html_raw = r"""<!DOCTYPE html>
 
         var wf_settings = {
             "scenario_name_original": "^_^",
-            "scenario_name_new": null,
+            "scenario_name_new": "^_^\x03",
             "tileset_index": 4,
             "dimensions_are_256_256": false,
             "human_plus_computer_is_eight": true,
@@ -425,13 +431,28 @@ temp_html_raw = r"""<!DOCTYPE html>
             wf_settings.assignment_table[key] = new Map(Object.entries(wf_settings.assignment_table[key]).map(([k, v]) => [parseInt(k), v]));
         }
 
+        if (wf_settings.human_plus_computer_is_eight) {
+            document.getElementById("warning").innerText = "경고: 사람 + 컴퓨터 자리가 8개인 맵입니다. 대기실에서 사람들이\n①여럿이 동시에 들어오거나 ②나갔다 들어오거나 ③관전자로 갈 경우\n'기본 활용 가능 색상' 외 색상이 정상 표시되지 않을 수 있습니다.";
+        }
+
         document.getElementById("base-map-name").innerText = wf_settings.scenario_name_original;
         // set inner text of base-map-name-length to the length of the base map name in bytes when encoded to utf-8
         document.getElementById("base-map-name-length").innerText = new TextEncoder().encode(wf_settings.scenario_name_original).length;
 
+        var blank_characters_available = [
+            "\u0085", "\u00A0", "\u061C", "\u115F", "\u1160", "\u1680", "\u180E", "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005", "\u2006", "\u2007", "\u2008", "\u2009", "\u200A", "\u200B", "\u200C", "\u200D", "\u200E", "\u200F", "\u2028", "\u2029", "\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\u202F", "\u205F", "\u2060", "\u2066", "\u2067", "\u2068", "\u2069", "\u2427", "\u2428", "\u2429", "\u242A", "\u242B", "\u242C", "\u242D", "\u242E", "\u242F", "\u2430", "\u2431", "\u2432", "\u2433", "\u2434", "\u2435", "\u2436", "\u2437", "\u2438", "\u2439", "\u243A", "\u243B", "\u243C", "\u243D", "\u243E", "\u243F", "\u2800", "\u3000", "\u3164", "\uFFA0", "\uFEFF"
+        ]
+
+        var blank_characters_byte_representation = blank_characters_available.map(s => new TextEncoder().encode(s));
+
         function escapeMapName(mapName) {
             var escapedMapName = "";
             for (var i = 0; i < mapName.length; i++) {
+                // check if i_th character is a blank character
+                if (blank_characters_available.includes(mapName[i])) {
+                    escapedMapName += escape(mapName[i]).replace("%", "\\");
+                    continue
+                }
                 var charCode = mapName.charCodeAt(i);
                 if (charCode < 32 || charCode == 127 || charCode == 58 /* colon */) {
                     escapedMapName += "\\x" + charCode.toString(16).padStart(2, "0");
@@ -455,8 +476,29 @@ temp_html_raw = r"""<!DOCTYPE html>
                             mapName += "\\x";
                             i += 1; // Skip over the backslash and x
                         } else {
-                            mapName += String.fromCharCode(parseInt(hex, 16));
+                            var result = String.fromCharCode(parseInt(hex, 16));
+                            // if (hex >= 32)
+                                mapName += result;
+                            // else
+                            //     mapName += " ";
                             i += 3; // Skip over this escape sequence
+                        }
+                    } else if (escapedMapName[i + 1] == "u") {
+                        // Hande unicode escape sequences
+                        var hex = escapedMapName.substr(i + 2, 4);
+                        // if hex is not a valid 4-digit hexadecimal number, just add the backslash and u to the map name
+                        if (!/^[0-9A-Fa-f]{4}$/.test(hex)) {
+                            mapName += "\\u";
+                            i += 1; // Skip over the backslash and u
+                        } else {
+                            var result = String.fromCodePoint(parseInt(hex, 16));
+                            // if (blank_characters_available.includes(result)) {
+                            //     for (var j = 0; j < new TextEncoder().encode(result).length; j++) {
+                            //         mapName += " ";
+                            //     }
+                            // } else
+                                mapName += result;
+                            i += 5; // Skip over this escape sequence
                         }
                     } else if (escapedMapName[i + 1] == "\\") {
                         // Handle escaped backslashes
@@ -626,11 +668,18 @@ temp_html_raw = r"""<!DOCTYPE html>
             var corresponding_character = '';
             if (color < 128) {
                 corresponding_character = escapeMapName(String.fromCharCode(color));
-            } else if (color == 128) {
-                // return blank character
-                corresponding_character = String.fromCharCode(0x3000);
-            } else /* if (color < 192) */ {
-                corresponding_character = String.fromCharCode(0x2500 + color - 128);
+            } else {
+                // check if color is contained in any of the blank_characters_byte_representation
+                for (var i = 0; i < blank_characters_byte_representation.length; i++) {
+                    if (blank_characters_byte_representation[i].includes(color)) {
+                        corresponding_character = escapeMapName(blank_characters_available[i]);
+                        break;
+                    }
+                }
+                // if failed
+                if (corresponding_character == '') {
+                    corresponding_character = String.fromCharCode(0x2500 + color - 128);
+                }
             }
             return `
                 <div class="requirement">
@@ -671,7 +720,7 @@ temp_html_raw = r"""<!DOCTYPE html>
             `;
         }
 
-        document.getElementById("right").innerHTML += createColorTable('tp', "테란/프로토스", 4);
+        document.getElementById("right").innerHTML += createColorTable('tp', "테란/프로토스 (WireframeRadomizer 1로 설정 필요)", 4);
         document.getElementById("right").innerHTML += createColorTable('z', "저그", 4);
         document.getElementById("right").innerHTML += createColorTable('s', "실드", 2);
 
@@ -705,7 +754,6 @@ temp_html_raw = r"""<!DOCTYPE html>
         }
 
         function addInitialRows() {
-            console.log(assignment_table);
             for (var tableId in assignment_table) {
                 var table = assignment_table[tableId];
                 for (var [index, assignment] of table) {
